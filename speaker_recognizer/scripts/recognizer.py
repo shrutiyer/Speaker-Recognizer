@@ -32,7 +32,7 @@ class HMM(object):
             return None
         return self.transitions[i_state][j_state]
 
-    def emission_prob(self, state, observation):
+    def emission_prob(self, state, observation): # TODO: observation arg?
         if not(state in self.states and observation in self.observations):
             return None
         return self.emissions[state][observation]
@@ -67,7 +67,7 @@ class HMM(object):
 
         return alpha[self.final_state_index][self.final_observation_index]
 
-    def viterbi(self, observation):
+    def viterbi(self):
         """ Given an observation sequence O and an HMM, lambda = (transitions, emissions), 
         discover the best hidden state sequence Q """
         path_probability = np.zeros((self.state_len, self.observation_len))
@@ -110,11 +110,35 @@ class HMM(object):
 
         # TODO: Return Backtrace Path
 
+    def backward(self):
+        """ Given an HMM, lambda, determine the probability, beta, of seeing the 
+            observations from time t+1 to the end, given that we are in state i at time t."""
+
+        # Initialize beta
+        beta = np.zeros((self.state_len, self.observation_len))
+
+        # Initialization
+        for state in range(1, self.final_state_index):
+            beta[state][self.final_observation_index] = self.transition_prob(state, self.final_state_index)
+
+        # Recursion
+
+        # Termination
+        
+
     def forward_backward(self):
         """ Given an observation sequence O and the set of states in the HMM, 
             learn the transitions and emissions of the HMM."""
-        pass
+        
+        # initialize A and B
+            # A: random
+            # B: ?
 
+        # iterate until convergence
+            # expectation step
+            # maximization step
+
+        # return A, B
 
 class Recognizer(object):
 
