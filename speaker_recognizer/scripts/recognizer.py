@@ -12,19 +12,24 @@ import numpy as np
 
 class HMM(object):
 
-    def __init__(self, name=None, transitions=None, emissions=None):
+    def __init__(self, name=None, transitions=None, emissions=None, observations=None):
 
         self.name = None
         self.transitions = transitions # Matrix of transision probabilities from one state to another. Size # of states by # of states
         self.emissions = emissions # Matrix of emission probabilities. Size # of states by # of observation symbol
         self.states = None # Includes start (q0) and end (qF) states. Along with N hidden states
-        self.observations = None
+        self.observations = observations
 
         self.observation_len = len(self.observations)
         self.state_len = len(self.states)
 
         self.final_state_index = state_len-1
         self.final_observation_index = observation_len-1
+
+        self.alpha = None
+        self.beta = None
+        self.zeta = None
+        self.gamma = None
 
     def transition_prob(self, i_state, j_state):
         # TODO: Include start probabilities in here
@@ -45,27 +50,31 @@ class HMM(object):
         """ Given an HMM, lambda = (transitions, emissions), and an observation sequence O, 
         determine the likelihood P(O|lambda) 
         observation: array of observations of length T"""
+
+        # i: state_prime
+        # j: state
+        # t: time
         
         # Initialize alpha = Previous forward path probability. Size # of states by length of observation
-        alpha = np.zeros((self.state_len, self.observation_len))
+        self.alpha = np.zeros((self.state_len, self.observation_len))
 
         # Initialization
         for state in range(1, self.final_state_index):
-            alpha[state][1] = self.transition_prob(0,state)*self.emissions[state][self.get_observation_index(1)]
+            self.alpha[state][1] = self.transition_prob(0,state)*self.emissions[state][self.get_observation_index(1)]
 
         # Recursion
         for time in range(1, self.observation_len): # Start from the second observation
             for state in range(1, self.final_state_index): # Exclude start and end states here
                 for state_prime in range(1, self.final_state_index):
-                    alpha[state][time] += alpha[state_prime][time-1]*self.transitions[state_prime][state]* \
+                    self.alpha[state][time] += self.alpha[state_prime][time-1]*self.transitions[state_prime][state]* \
                                     self.emissions[state][self.get_observation_index(time)] 
 
         # Termination
         for state in range(1, self.final_state_index):
-            alpha[self.final_state_index][self.final_observation_index] += alpha[state][self.final_observation_index]* \
+            self.alpha[self.final_state_index][self.final_observation_index] += self.alpha[state][self.final_observation_index]* \
                                                                     self.transitions[state][self.final_state_index]
 
-        return alpha[self.final_state_index][self.final_observation_index]
+        # return self.alpha[self.final_state_index][self.final_observation_index]
 
     def viterbi(self):
         """ Given an observation sequence O and an HMM, lambda = (transitions, emissions), 
@@ -115,26 +124,79 @@ class HMM(object):
             observations from time t+1 to the end, given that we are in state i at time t."""
 
         # Initialize beta
-        beta = np.zeros((self.state_len, self.observation_len))
+        self.beta = np.zeros((self.state_len, self.observation_len))
 
         # Initialization
         for state in range(1, self.final_state_index):
-            beta[state][self.final_observation_index] = self.transition_prob(state, self.final_state_index)
+            self.beta[state][self.final_observation_index] = self.transition_prob(state, self.final_state_index)
 
         # Recursion
 
-        # Termination
-        
+        # i: state
+        # j: state_prime
+        # t: time
+        for time in range(1, self.observation_len): # Start from the second observation
+            for state in range(1, self.final_state_index): # Exclude start and end states here
+                for state_prime in range(1, self.final_state_index):
+                    self.beta[state][time] += self.transitions[state][state_prime] *  \
+                        self.emissions[state_prime][self.get_observation_index(time+1)] * \
+                        self.beta[state_prime][time+1]
 
-    def forward_backward(self):
+        # Termination
+        for state in range(1, self.final_state_index):
+            update = self.transitions[0][state] * self.emissions[state][self.get_observation_index(1)] * self.beta[state][1]
+            self.alpha[self.final_state_index][self.final_observation_index] += update
+            self.beta[0][self.get_observation_index(1)] += update
+
+        # # TODO: what does the backward algorithm return?
+        # return self.beta[0][0]
+
+    # zeta: the probability of being in state i and time t and state j and time t+1
+    # for updating self.transitions (A)
+    # i: state
+    # j: state_prime
+    def squiggle(self, state, state_prime, time): 
+        self.zeta = (self.alpha[state][time] * self.transitions[state][state_prime] * \
+            self.emissions[state_prime][self.get_observation_index(time+1)] * \
+            self.beta[state_prime][time+1]) / self.alpha[self.final_state_index][self.final_observation_index]
+
+    # gamma: the probability of being in state j at time t
+    # for updating self.emissions (B)
+    def gamma(self, state, time):
+        self.gamma = self.alpha[state][time] * self.beta[state][time] / self.alpha[self.final_state_index][self.final_observation_index]
+
+    def update_transitions(self, state, state_prime):
+        # update transitions (A)
+        zeta_sum_num = 0
+        zeta_sum_den = 0
+        for time in range(1, self.final_observation_index-1):
+            zeta_sum_num += self.zeta[state][state_prime]
+            for state_k in range(1, self.final_state_index):
+                zeta_sum_den += self.zeta[state][state_k]
+
+        self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
+
+    def update_emissions(self, state, v_k):
+         # update emissions (B)
+        gamma_sum_num = 0
+        gamma_sum_den = 0
+
+        # sum over all t for which the observation at time t was v_k
+        for time in range(1, self.final_observation_index):
+        # TODO: how to initialize self.observations?
+        if self.observations[time] == v_k:
+            gamma_sum_num += self.gamma[state, time]
+        gamma_sum_den += self.gamma[state, time]
+
+        self.emissions[v_k][state] = gamma_sum_num / gamma_sum_den
+
+    def baum_welch(self):
         """ Given an observation sequence O and the set of states in the HMM, 
             learn the transitions and emissions of the HMM."""
         
-        # initialize A and B
-            # A: random
-            # B: ?
+        # initialize A and B - TODO: how?
 
-        # iterate until convergence
+        # iterate until convergence - TODO: how to determine convergence?
             # expectation step
             # maximization step
 
