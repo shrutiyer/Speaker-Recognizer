@@ -2,11 +2,9 @@
 
 import rospy
 
-from python_speech_features import mfcc
-from python_speech_features import delta
-from python_speech_features import logfbank
+from python_speech_features import mfcc, delta, logfbank
 import scipy.io.wavfile as wav
-from scipy.cluster.vq import kmeans2
+from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
 
 
@@ -206,22 +204,33 @@ class Recognizer(object):
 
     def __init__(self, audio_topic):
         rospy.init_node('recognizer')
+        self.codebook = None
 
         # TODO: AudioData msg?
         # self.sub = rospy.Subscriber(audio_topic, AudioData, self.process_audio)
 
-    def process_audio(self):
-        """ Takes in a wav file and outputs a 13 dimension MFCC vector
+
+    def process_audio(self, isTraining):
+        """ Takes in a wav file and outputs labeled observations of the audio
+            isTraining: bool that is true if the model is being trained
         """
         # (rate, sig) = msg
         # TODO: how to translate microphone audio to correct format?
 
         (rate, sig) = wav.read("english.wav")
+        # MFCC Features. Each row corresponds to MFCC for a frame
         mfcc_feat = mfcc(sig, rate)
 
-        # TODO: Figure out if we are doing clustering correctly
-        mfcc_centroids = kmeans2(mfcc_feat[:,:], 1)[0]
+        # Normalize the features
+        whitened = whiten(mfcc_feat)
 
+        if (isTraining):
+            # Create a codebook and labeled observations
+            self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
+        else:
+            labeled_obs = vq(mfcc_feat, self.codebook)
+
+        return labeled_obs
 
     def run(self):
         """ Main run function """
@@ -230,7 +239,7 @@ class Recognizer(object):
         
         while not rospy.is_shutdown():  
             try:
-                # self.process_audio()
+                # self.process_audio(isTraining=True)
                 print "Running"
                 r.sleep()
             except rospy.exceptions.ROSTimeMovedBackwardsException:
