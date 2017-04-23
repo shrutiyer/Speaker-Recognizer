@@ -7,6 +7,14 @@ import scipy.io.wavfile as wav
 from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
 
+"""
+HMM Questions:
+- How are the hidden states created?
+- Do the forward and backward algorithms have to return anything?
+- How to represent a backtrace path?
+- How to initialize A and B?
+- How to determine convergence in Baum-Welch?
+"""
 
 class HMM(object):
 
@@ -181,7 +189,6 @@ class HMM(object):
 
         # sum over all t for which the observation at time t was v_k
         for time in range(1, self.final_observation_index):
-        # TODO: how to initialize self.observations?
         if self.observations[time] == v_k:
             gamma_sum_num += self.gamma[state, time]
         gamma_sum_den += self.gamma[state, time]
@@ -192,13 +199,13 @@ class HMM(object):
         """ Given an observation sequence O and the set of states in the HMM, 
             learn the transitions and emissions of the HMM."""
         
-        # initialize A and B - TODO: how?
+        # TODO: how to initialize A and B
         self.transitions = np.ones( (self.state_len, self.state_len) )
         self.transitions = self.transitions / np.sum(self.transitions,1)
         self.emissions = np.ones( (self.state_len, self.observation_len) )
         self.emissions = self.emissions / np.sum(self.emissions,1)
 
-        # iterate until convergence - TODO: how to determine convergence?
+        # iterate until convergence
         while True:
             old_A = self.transitions
             old_B = self.emissions
@@ -218,6 +225,8 @@ class HMM(object):
                 for state in range(1, self.final_state_index):
                     v_k = self.observations[time]
                     self.update_emissions(state,v_k)
+            
+            # TODO: how to determine convergence
             print np.linalg.norm(old_A-self.transitions)
             print np.linalg.norm(old_B-self.emissions)
                 
