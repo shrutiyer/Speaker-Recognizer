@@ -153,14 +153,14 @@ class HMM(object):
     # for updating self.transitions (A)
     # i: state
     # j: state_prime
-    def squiggle(self, state, state_prime, time): 
+    def calc_squiggle(self, state, state_prime, time): 
         self.zeta = (self.alpha[state][time] * self.transitions[state][state_prime] * \
             self.emissions[state_prime][self.get_observation_index(time+1)] * \
             self.beta[state_prime][time+1]) / self.alpha[self.final_state_index][self.final_observation_index]
 
     # gamma: the probability of being in state j at time t
     # for updating self.emissions (B)
-    def gamma(self, state, time):
+    def calc_gamma(self, state, time):
         self.gamma = self.alpha[state][time] * self.beta[state][time] / self.alpha[self.final_state_index][self.final_observation_index]
 
     def update_transitions(self, state, state_prime):
@@ -193,12 +193,38 @@ class HMM(object):
             learn the transitions and emissions of the HMM."""
         
         # initialize A and B - TODO: how?
+        self.transitions = np.ones( (self.state_len, self.state_len) )
+        self.transitions = self.transitions / np.sum(self.transitions,1)
+        self.emissions = np.ones( (self.state_len, self.observation_len) )
+        self.emissions = self.emissions / np.sum(self.emissions,1)
 
         # iterate until convergence - TODO: how to determine convergence?
+        while True:
+            old_A = self.transitions
+            old_B = self.emissions
             # expectation step
-            # maximization step
+            for time in range(1, self.final_observation_index):
+                for state in range(1, self.final_state_index):
+                    self.calc_gamma(state,time)
+                    for state_prime in range(1, self.final_state_index):
+                        self.calc_squiggle(state,state_prime,time)
 
-        # return A, B
+            # maximization step
+            for state in range(1,self.final_state_index):
+                for state_prime in range(1,self.final_state_index):
+                    self.update_transitions(state,state_prime)
+
+            for time in range(1, self.final_observation_index):
+                for state in range(1, self.final_state_index):
+                    v_k = self.observations[time]
+                    self.update_emissions(state,v_k)
+            print np.linalg.norm(old_A-self.transitions)
+            print np.linalg.norm(old_B-self.emissions)
+                
+            # return A, B
+            # return self.transitions, self.emissions
+
+
 
 class Recognizer(object):
 
