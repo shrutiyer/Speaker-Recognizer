@@ -5,6 +5,8 @@ import math
 
 sound_speed = 340.29*100 # cm/s
 mic_dist = 30 # cm
+buf = 200
+
 def audio_chunks(file_name, chunks):
 	[rate, wave] = wavfile.read(file_name)
 	raw_0 = wave[:, 0].astype(np.float64)
@@ -16,12 +18,10 @@ def audio_chunks(file_name, chunks):
 		start = i*chunks
 		end = (i+1)*chunks
 
-		buf = 200
+		left = raw_0[start:end]
+		right = raw_1[start-buf:end+buf]
 
-		chunk_ch_0 = raw_1[start-buf:end+buf]
-		chunk_ch_1 = raw_0[start:end]
-
-		corr_arr = np.correlate(chunk_ch_0,chunk_ch_1,'valid')	
+		corr_arr = np.correlate(right, left, 'valid')	
 		max_index = (len(corr_arr)/2)-np.argmax(corr_arr) 
 		time_d = max_index/float(rate)
 		signal_dist = time_d*sound_speed
@@ -42,4 +42,4 @@ def audio_chunks(file_name, chunks):
 	index = np.argmax(hist)
 	print "Angle", bins[index]
 
-audio_chunks('test5.wav', 5000)
+audio_chunks('../data/test/test1.wav', 5000)
