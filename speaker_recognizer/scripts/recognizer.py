@@ -29,13 +29,13 @@ class HMM(object):
         self.transitions = transitions # Matrix of transision probabilities from one state to another. Size # of states by # of states
         self.emissions = emissions # Matrix of emission probabilities. Size # of states by # of observation symbol
         self.states = states # Includes start (q0) and end (qF) states. Along with N hidden states
-        self.observations = None
-
-        self.observation_len = len(self.observations)
         self.state_len = len(self.states)
-
         self.final_state_index = state_len-1
-        self.final_observation_index = observation_len-1
+
+        # Gets set while training
+        self.observations = None
+        self.observation_len = 0
+        self.final_observation_index = 0
 
         self.alpha = None
         self.beta = None
@@ -69,12 +69,12 @@ class HMM(object):
         # Initialize alpha = Previous forward path probability. Size # of states by length of observation
         self.alpha = np.zeros((self.state_len, self.observation_len))
 
-        # Initialization
+        # Initialization: loops through all hidden states
         for state in range(1, self.final_state_index):
-            self.alpha[state][1] = self.transition_prob(0,state)*self.emissions[state][self.get_observation_index(1)]
+            self.alpha[state][self.get_observation_index(1)] = self.transition_prob(0,state)*self.emissions[state][self.get_observation_index(1)]
 
         # Recursion
-        for time in range(1, self.observation_len): # Start from the second observation
+        for time in range(self.get_observation_index(2), self.observation_len): # Start from the second observation
             for state in range(1, self.final_state_index): # Exclude start and end states here
                 for state_prime in range(1, self.final_state_index):
                     self.alpha[state][time] += self.alpha[state_prime][time-1]*self.transitions[state_prime][state]* \
@@ -237,6 +237,17 @@ class HMM(object):
                 
             # return A, B
             # return self.transitions, self.emissions
+    def train(self, observations, iterations=10):
+        """
+        Trains the model and calculates transitions and emissions probabilities
+        Input = Array of ice-creams eaten each day
+        """
+        self.observations = observations
+        self.observation_len = len(self.observations)
+        self.final_observation_index = observation_len-1
+
+        self.zeta = [[[0.0] * (self.observation_len) for i in range(self.state_len)] for j in range(self.state_len)]
+
 
 if __name__ == '__main__':
     states = [0, 1, 2, 3] # Where 0 = start, 1 = hot, 2 = cold, 3 = final
