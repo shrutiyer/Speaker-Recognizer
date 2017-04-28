@@ -8,23 +8,28 @@ from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
 
 """
-HMM Questions:
-- How are the hidden states created?
-- Do the forward and backward algorithms have to return anything?
-- How to represent a backtrace path?
-- How to initialize A and B?
-- How to determine convergence in Baum-Welch?
+Validation of the hidden markov model using the ice cream example.
+Similar to the problem presented here: https://nadesnotes.wordpress.com/tag/hidden-markov-models/
+
+Model:
+n hiddens states
+m observations
+
+transition matrix: of size (n+2)x(n+2) where item at index (i,j) is the 
+                   probability of transitioning from state i to state j
+emissions matrix: of size mxn where item at index (i,j) is the probability 
+                  of seeing ith observation in j state.
 """
 
 class HMM(object):
 
-    def __init__(self, name=None, transitions=None, emissions=None, observations=None):
+    def __init__(self, name=None, transitions=None, emissions=None, states=None):
 
-        self.name = None
+        self.name = name
         self.transitions = transitions # Matrix of transision probabilities from one state to another. Size # of states by # of states
         self.emissions = emissions # Matrix of emission probabilities. Size # of states by # of observation symbol
-        self.states = None # Includes start (q0) and end (qF) states. Along with N hidden states
-        self.observations = observations
+        self.states = states # Includes start (q0) and end (qF) states. Along with N hidden states
+        self.observations = None
 
         self.observation_len = len(self.observations)
         self.state_len = len(self.states)
@@ -233,56 +238,13 @@ class HMM(object):
             # return A, B
             # return self.transitions, self.emissions
 
-
-
-class Recognizer(object):
-
-    def __init__(self, audio_topic):
-        rospy.init_node('recognizer')
-        self.codebook = None
-
-        # TODO: AudioData msg?
-        # self.sub = rospy.Subscriber(audio_topic, AudioData, self.process_audio)
-
-
-    def process_audio(self, isTraining):
-        """ Takes in a wav file and outputs labeled observations of the audio
-            isTraining: bool that is true if the model is being trained
-        """
-        # (rate, sig) = msg
-        # TODO: how to translate microphone audio to correct format?
-
-        (rate, sig) = wav.read("english.wav")
-        # MFCC Features. Each row corresponds to MFCC for a frame
-        mfcc_feat = mfcc(sig, rate)
-
-        # Normalize the features
-        whitened = whiten(mfcc_feat)
-
-        if (isTraining):
-            # Create a codebook and labeled observations
-            self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
-        else:
-            labeled_obs = vq(mfcc_feat, self.codebook)
-
-        return labeled_obs
-
-    def run(self):
-        """ Main run function """
-        
-        r = rospy.Rate(50) # 20 ms samples
-        
-        while not rospy.is_shutdown():  
-            try:
-                # self.process_audio(isTraining=True)
-                print "Running"
-                r.sleep()
-            except rospy.exceptions.ROSTimeMovedBackwardsException:
-                print "Time went backwards. Carry on."
-
-
 if __name__ == '__main__':
-    recognizer = Recognizer("/audio/audio")
-    recognizer.run()
-    hmm = HMM()
-    hmm.forward()
+    states = [0, 1, 2, 3] # Where 0 = start, 1 = hot, 2 = cold, 3 = final
+    # Given ith state, how likely will it transition to jth state
+    transitions = np.array([0.0,0.5,0.5,0.0],[0.0,0.8,0.1,0.1],[0.0,0.1,0.8,0.1],[0.0,0.0,0.0,0.0])
+    # Given ith state, probability of seeing 1, 2, 3 ice-creams.
+    emissions = np.array([0.0,0.0,0.0],[0.1,0.2,0.7],[0.7,0.2,0.1],[0.0,0.0,0.0])
+    observations = [1,3,2,2,1] # TODO: Change if necessary
+    hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
+
+    hmm.train(observations)
