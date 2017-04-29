@@ -212,27 +212,27 @@ class HMM(object):
             print "BETA"
             print self.beta
 
-            for time in range(self.get_observation_index(1), self.final_observation_index):
+            for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
                     self.calc_gamma(state,time)
-                    for state_prime in range(1, self.final_state_index):
-                        self.calc_squiggle(state,state_prime,time)
+                    #for state_prime in range(1, self.final_state_index):
+                        #self.calc_squiggle(state,state_prime,time)
             
-            # print "GAMMA"
-            # print self.gamma
+            print "GAMMA"
+            print self.gamma
 
             # print "ZETA"
             # print self.zeta
 
             # maximization step
-            for state in range(1,self.final_state_index):
-                for state_prime in range(1,self.final_state_index):
-                    self.update_transitions(state,state_prime)
+            # for state in range(1,self.final_state_index):
+            #     for state_prime in range(1,self.final_state_index):
+            #         self.update_transitions(state,state_prime)
 
-            for time in range(self.get_observation_index(1), self.final_observation_index):
-                for state in range(1, self.final_state_index):
-                    v_k = self.observations[time]
-                    self.update_emissions(state,v_k)
+            # for time in range(self.get_observation_index(1), self.final_observation_index):
+            #     for state in range(1, self.final_state_index):
+            #         v_k = self.observations[time]
+            #         self.update_emissions(state,v_k)
             
             # print "TRANSISTIONS"
             # print self.transitions
@@ -271,4 +271,4 @@ if __name__ == '__main__':
     observations = [2,3,3,2,3,2,3,2,2,3,1,3,3,1,1,1,2,1,1,1,3,1,2,1,1,1,2,3,3,2,3,2,2] # TODO: Change if necessary
     hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
 
-    hmm.train(observations,2)
+    hmm.train(observations,1)
