@@ -174,11 +174,22 @@ class HMM(object):
         # update transitions (A)
         zeta_sum_num = 0
         zeta_sum_den = 0
-        for time in range(self.get_observation_index(1), self.final_observation_index-1):
+
+        for time in range(self.get_observation_index(1), self.final_observation_index):
             zeta_sum_num += self.zeta[state][state_prime][time]
-            for state_k in range(1, self.final_state_index):
+            for state_k in range(0, self.final_state_index+1):
                 zeta_sum_den += self.zeta[state][state_k][time]
+        # TODO: Figure out why this adjustment
+        zeta_sum_den += self.adjustment(state)
         self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
+
+    def adjustment(self, state):
+        # TODO: Adjustment is not quite right (according to the spreadsheet)
+        num = self.alpha[state][self.final_observation_index]*self.beta[state][self.final_observation_index]
+        den = num 
+        for s in range(1, self.final_state_index):
+            den += self.alpha[s][self.final_observation_index]*self.beta[s][self.final_observation_index]
+        return num/den
 
     def update_emissions(self, state, v_k):
          # update emissions (B)
@@ -218,30 +229,29 @@ class HMM(object):
             
             for time in range(self.get_observation_index(1), self.final_observation_index):
                 for state in range(1, self.final_state_index):
-                    self.calc_gamma(state,time)
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
-            print "GAMMA"
-            print self.gamma
+            # print "GAMMA"
+            # print self.gamma
 
-            print "ZETA"
-            print self.zeta
+            # print "ZETA"
+            # print self.zeta
 
             # maximization step
-            # for state in range(1,self.final_state_index):
-            #     for state_prime in range(1,self.final_state_index):
-            #         self.update_transitions(state,state_prime)
+            for state in range(1,self.final_state_index):
+                for state_prime in range(1,self.final_state_index):
+                    self.update_transitions(state,state_prime)
 
             # for time in range(self.get_observation_index(1), self.final_observation_index):
-            #     for state in range(1, self.final_state_index):
-            #         v_k = self.observations[time]
-            #         self.update_emissions(state,v_k)
+                for state in range(1, self.final_state_index):
+                    v_k = self.observations[time]
+                    self.update_emissions(state,v_k)
             
-            # print "TRANSISTIONS"
-            # print self.transitions
+            print "TRANSISTIONS"
+            print self.transitions
 
-            # print "EMISSIONS"
-            # print self.emissions
+            print "EMISSIONS"
+            print self.emissions
             
             # TODO: how to determine convergence
             # print np.linalg.norm(old_A-self.transitions)
@@ -274,4 +284,19 @@ if __name__ == '__main__':
     observations = [2,3,3,2,3,2,3,2,2,3,1,3,3,1,1,1,2,1,1,1,3,1,2,1,1,1,2,3,3,2,3,2,2] # TODO: Change if necessary
     hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
 
-    hmm.train(observations,1)
+    hmm.train(observations,10)
+
+"""
+After 10 iterations
+OUR VALUES
+[[ 0.          0.5         0.5         0.        ]
+ [ 0.          0.90637403  0.06794255  0.1       ]
+ [ 0.          0.09598065  0.90084983  0.1       ]
+ [ 0.          0.          0.          0.        ]]
+
+SPREADSHEET
+[[ 0.          x           x           0.        ]
+ [ 0.          0.8651      0.0718      x         ]
+ [ 0.          0.0718      0.9337      x         ]
+ [ 0.          0.          0.          0.        ]]
+"""
