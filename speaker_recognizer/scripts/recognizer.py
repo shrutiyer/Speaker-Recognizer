@@ -124,7 +124,7 @@ class HMM(object):
     def backward(self):
         """ Given an HMM, lambda, determine the probability, beta, of seeing the 
             observations from time t+1 to the end, given that we are in state i at time t."""
-
+        
         # Initialize beta
         self.beta = np.zeros((self.state_len, self.observation_len))
 
@@ -137,18 +137,18 @@ class HMM(object):
         # i: state
         # j: state_prime
         # t: time
-        for time in range(self.get_observation_index(1), self.final_observation_index):
+        # We want to calculate this numbers back to front
+        for time in range(self.final_observation_index-1,self.get_observation_index(1)-1,-1):
             for state in range(1, self.final_state_index): # Exclude start and end states here
                 for state_prime in range(1, self.final_state_index):
                     self.beta[state][time] += self.transitions[state][state_prime] *  \
                         self.emission_prob(state_prime,time+1) * \
                         self.beta[state_prime][time+1]
-                    print self.beta[state][time]
+                    # print self.transitions[state][state_prime], "mul", self.emission_prob(state_prime,time+1), "mul", self.beta[state_prime][time+1], "equals", self.beta[state][time]
 
         # Termination
         for state in range(1, self.final_state_index):
             update = self.transitions[0][state] * self.emission_prob(state,self.get_observation_index(1)) * self.beta[state][self.get_observation_index(1)]
-            self.alpha[self.final_state_index][self.final_observation_index] += update
             self.beta[0][self.get_observation_index(1)] += update
 
         # # TODO: what does the backward algorithm return?
@@ -217,12 +217,12 @@ class HMM(object):
                     self.calc_gamma(state,time)
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
+            
+            # print "GAMMA"
+            # print self.gamma
 
-            print "GAMMA"
-            print self.gamma
-
-            print "ZETA"
-            print self.zeta
+            # print "ZETA"
+            # print self.zeta
 
             # maximization step
             for state in range(1,self.final_state_index):
@@ -233,6 +233,12 @@ class HMM(object):
                 for state in range(1, self.final_state_index):
                     v_k = self.observations[time]
                     self.update_emissions(state,v_k)
+            
+            # print "TRANSISTIONS"
+            # print self.transitions
+
+            # print "EMISSIONS"
+            # print self.emissions
             
             # TODO: how to determine convergence
             # print np.linalg.norm(old_A-self.transitions)
@@ -265,4 +271,4 @@ if __name__ == '__main__':
     observations = [2,3,3,2,3,2,3,2,2,3,1,3,3,1,1,1,2,1,1,1,3,1,2,1,1,1,2,3,3,2,3,2,2] # TODO: Change if necessary
     hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
 
-    hmm.train(observations,1)
+    hmm.train(observations,2)
