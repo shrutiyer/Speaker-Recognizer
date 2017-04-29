@@ -205,24 +205,27 @@ class HMM(object):
             old_B = self.emissions
             # expectation step
             self.forward()
-            print "ALPHA"
-            print self.alpha
+            # print "ALPHA"
+            # print self.alpha
 
             self.backward()
-            print "BETA"
-            print self.beta
+            # print "BETA"
+            # print self.beta
 
             for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
                     self.calc_gamma(state,time)
-                    #for state_prime in range(1, self.final_state_index):
-                        #self.calc_squiggle(state,state_prime,time)
             
+            for time in range(self.get_observation_index(1), self.final_observation_index):
+                for state in range(1, self.final_state_index):
+                    self.calc_gamma(state,time)
+                    for state_prime in range(1, self.final_state_index):
+                        self.calc_squiggle(state,state_prime,time)
             print "GAMMA"
             print self.gamma
 
-            # print "ZETA"
-            # print self.zeta
+            print "ZETA"
+            print self.zeta
 
             # maximization step
             # for state in range(1,self.final_state_index):
