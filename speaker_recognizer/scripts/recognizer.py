@@ -41,6 +41,8 @@ class HMM(object):
         self.zeta = None
         self.gamma = None
 
+        self.gamma_sum = np.zeros(self.state_len)
+
     def emission_prob(self, state, time): # TODO: observation arg?
         return self.emissions[state][self.observations[time]-1]
 
@@ -175,21 +177,25 @@ class HMM(object):
         zeta_sum_num = 0
         zeta_sum_den = 0
 
-        for time in range(self.get_observation_index(1), self.final_observation_index):
-            zeta_sum_num += self.zeta[state][state_prime][time]
-            for state_k in range(0, self.final_state_index+1):
-                zeta_sum_den += self.zeta[state][state_k][time]
-        # TODO: Figure out why this adjustment
-        zeta_sum_den += self.adjustment(state)
-        self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
+        switch(n) {
+            case 0:
+                # Start state
+                self.transitions[state][state_prime] = self.gamma[state_prime][time]
+                break;
+            case self.final_state_index:
+                # End state
+                self.transitions[state][state_prime] = self.gamma[state_prime][time] / self.gamma_sum
+                break;
+            default:
+                # For all other times
+                for time in range(self.get_observation_index(1), self.observation_len):
+                    zeta_sum_num += self.zeta[state][state_prime][time]
+                    zeta_sum_den += self.gamma[state][time]
 
-    def adjustment(self, state):
-        # TODO: Adjustment is not quite right (according to the spreadsheet)
-        num = self.alpha[state][self.final_observation_index]*self.beta[state][self.final_observation_index]
-        den = num 
-        for s in range(1, self.final_state_index):
-            den += self.alpha[s][self.final_observation_index]*self.beta[s][self.final_observation_index]
-        return num/den
+                self.gamma_sum[state] = zeta_sum_den
+                self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
+                break;
+        }
 
     def update_emissions(self, state, v_k):
          # update emissions (B)
@@ -197,11 +203,12 @@ class HMM(object):
         gamma_sum_den = 0
 
         # sum over all t for which the observation at time t was v_k
-        for time in range(self.get_observation_index(1), self.final_observation_index):
+        for time in range(self.get_observation_index(1), self.observation_len):
             if self.observations[time] == v_k:
                 gamma_sum_num += self.gamma[state][time]
             gamma_sum_den += self.gamma[state][time]
 
+        # print "POOOOP", gamma_sum_num, gamma_sum_den
         # We subtract 1 because indexing
         self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
 
@@ -216,12 +223,12 @@ class HMM(object):
             old_B = self.emissions
             # expectation step
             self.forward()
-            # print "ALPHA"
-            # print self.alpha
+            print "ALPHA"
+            print self.alpha
 
             self.backward()
-            # print "BETA"
-            # print self.beta
+            print "BETA"
+            print self.beta
 
             for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
@@ -231,19 +238,18 @@ class HMM(object):
                 for state in range(1, self.final_state_index):
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
-            # print "GAMMA"
-            # print self.gamma
+            print "GAMMA"
+            print self.gamma
 
-            # print "ZETA"
-            # print self.zeta
+            print "ZETA"
+            print self.zeta
 
             # maximization step
-            for state in range(1,self.final_state_index):
-                for state_prime in range(1,self.final_state_index):
+            for state in range(0,self.state_len):
+                for state_prime in range(0,self.state_len):
                     self.update_transitions(state,state_prime)
 
-            # for time in range(self.get_observation_index(1), self.final_observation_index):
-                for state in range(1, self.final_state_index):
+                for time in range(self.get_observation_index(1), self.final_observation_index):
                     v_k = self.observations[time]
                     self.update_emissions(state,v_k)
             
@@ -284,7 +290,7 @@ if __name__ == '__main__':
     observations = [2,3,3,2,3,2,3,2,2,3,1,3,3,1,1,1,2,1,1,1,3,1,2,1,1,1,2,3,3,2,3,2,2] # TODO: Change if necessary
     hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
 
-    hmm.train(observations,10)
+    hmm.train(observations,1)
 
 """
 After 10 iterations
