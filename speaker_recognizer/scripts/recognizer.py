@@ -204,9 +204,8 @@ class HMM(object):
                 gamma_sum_num += self.gamma[state][time]
             gamma_sum_den += self.gamma[state][time]
 
-        # print "POOOOP", gamma_sum_num, gamma_sum_den
-        # We subtract 1 because indexing
-        self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
+        if (gamma_sum_den != 0):
+            self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
 
     def baum_welch(self):
         """ Given an observation sequence O and the set of states in the HMM, 
