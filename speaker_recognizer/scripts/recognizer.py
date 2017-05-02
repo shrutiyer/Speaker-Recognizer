@@ -218,12 +218,12 @@ class HMM(object):
             old_B = self.emissions
             # expectation step
             self.forward()
-            print "ALPHA"
-            print self.alpha
+            # print "ALPHA"
+            # print self.alpha
 
             self.backward()
-            print "BETA"
-            print self.beta
+            # print "BETA"
+            # print self.beta
 
             for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
@@ -233,11 +233,11 @@ class HMM(object):
                 for state in range(1, self.final_state_index):
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
-            print "GAMMA"
-            print self.gamma
+            # print "GAMMA"
+            # print self.gamma
 
-            print "ZETA"
-            print self.zeta
+            # print "ZETA"
+            # print self.zeta
 
             # maximization step
             for state in range(0,self.state_len-1):
@@ -254,6 +254,7 @@ class HMM(object):
             print "EMISSIONS"
             print self.emissions
             
+            print "----------------------------------------------"
             # TODO: how to determine convergence
             # print np.linalg.norm(old_A-self.transitions)
             # print np.linalg.norm(old_B-self.emissions)
@@ -285,19 +286,4 @@ if __name__ == '__main__':
     observations = [2,3,3,2,3,2,3,2,2,3,1,3,3,1,1,1,2,1,1,1,3,1,2,1,1,1,2,3,3,2,3,2,2] # TODO: Change if necessary
     hmm = HMM(name='Brook', transitions=transitions, emissions=emissions, states=states)
 
-    hmm.train(observations,1)
-
-"""
-After 10 iterations
-OUR VALUES
-[[ 0.          0.5         0.5         0.        ]
- [ 0.          0.90637403  0.06794255  0.1       ]
- [ 0.          0.09598065  0.90084983  0.1       ]
- [ 0.          0.          0.          0.        ]]
-
-SPREADSHEET
-[[ 0.          x           x           0.        ]
- [ 0.          0.8651      0.0718      x         ]
- [ 0.          0.0718      0.9337      x         ]
- [ 0.          0.          0.          0.        ]]
-"""
+    hmm.train(observations,10)
