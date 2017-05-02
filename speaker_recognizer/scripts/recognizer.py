@@ -176,15 +176,15 @@ class HMM(object):
         # update transitions (A)
         zeta_sum_num = 0
         zeta_sum_den = 0
-
-        n = state
-        if n == 0:
+        
+        if state == 0:
             # Start state
-            self.transitions[state][state_prime] = self.gamma[state_prime][time]
-        elif n == self.final_state_index:
+            self.transitions[state][state_prime] = self.gamma[state_prime][0]
+        elif state_prime == self.final_state_index:
             # End state
-            self.transitions[state][state_prime] = self.gamma[state_prime][time] / self.gamma_sum
-        else
+            if (self.gamma_sum[state] != 0):
+                self.transitions[state][state_prime] = self.gamma[state][self.final_observation_index] / self.gamma_sum[state]
+        else:
             # For all other times
             for time in range(self.get_observation_index(1), self.observation_len):
                 zeta_sum_num += self.zeta[state][state_prime][time]
@@ -241,7 +241,7 @@ class HMM(object):
             print self.zeta
 
             # maximization step
-            for state in range(0,self.state_len):
+            for state in range(0,self.state_len-1):
                 for state_prime in range(0,self.state_len):
                     self.update_transitions(state,state_prime)
 
