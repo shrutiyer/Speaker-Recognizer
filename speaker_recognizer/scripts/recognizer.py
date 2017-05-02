@@ -177,25 +177,21 @@ class HMM(object):
         zeta_sum_num = 0
         zeta_sum_den = 0
 
-        switch(n) {
-            case 0:
-                # Start state
-                self.transitions[state][state_prime] = self.gamma[state_prime][time]
-                break;
-            case self.final_state_index:
-                # End state
-                self.transitions[state][state_prime] = self.gamma[state_prime][time] / self.gamma_sum
-                break;
-            default:
-                # For all other times
-                for time in range(self.get_observation_index(1), self.observation_len):
-                    zeta_sum_num += self.zeta[state][state_prime][time]
-                    zeta_sum_den += self.gamma[state][time]
+        n = state
+        if n == 0:
+            # Start state
+            self.transitions[state][state_prime] = self.gamma[state_prime][time]
+        elif n == self.final_state_index:
+            # End state
+            self.transitions[state][state_prime] = self.gamma[state_prime][time] / self.gamma_sum
+        else
+            # For all other times
+            for time in range(self.get_observation_index(1), self.observation_len):
+                zeta_sum_num += self.zeta[state][state_prime][time]
+                zeta_sum_den += self.gamma[state][time]
 
-                self.gamma_sum[state] = zeta_sum_den
-                self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
-                break;
-        }
+            self.gamma_sum[state] = zeta_sum_den
+            self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
 
     def update_emissions(self, state, v_k):
          # update emissions (B)
