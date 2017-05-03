@@ -26,7 +26,7 @@ class HMM(object):
         
         self.states = states # Includes start (q0) and end (qF) states. Along with N hidden states
         self.state_len = len(self.states)
-        self.final_state_index = state_len-1
+        self.final_state_index = self.state_len-1
 
         # Gets set while training
         self.observations = None
@@ -74,7 +74,9 @@ class HMM(object):
         for state in range(1, self.final_state_index):
             self.alpha[self.final_state_index][self.final_observation_index] += self.alpha[state][self.final_observation_index]* \
                                                                     self.transitions[state][self.final_state_index]
-        # return self.alpha[self.final_state_index][self.final_observation_index]
+        # print "ALPHA"
+        # print self.alpha
+        return self.alpha[self.final_state_index][self.final_observation_index]
 
     def backward(self):
         """ Given an HMM, lambda, determine the probability, beta, of seeing the 
@@ -169,12 +171,8 @@ class HMM(object):
             old_B = self.emissions
             # expectation step
             self.forward()
-            print "ALPHA"
-            print self.alpha
 
             self.backward()
-            print "BETA"
-            print self.beta
 
             for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
@@ -184,11 +182,6 @@ class HMM(object):
                 for state in range(1, self.final_state_index):
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
-            print "GAMMA"
-            print self.gamma
-
-            print "ZETA"
-            print self.zeta
 
             # maximization step
             for state in range(0,self.state_len-1):
@@ -199,11 +192,11 @@ class HMM(object):
                     v_k = self.observations[time]
                     self.update_emissions(state,v_k)
             
-            print "TRANSISTIONS"
-            print self.transitions
+            # print "TRANSITIONS"
+            # print self.transitions
 
-            print "EMISSIONS"
-            print self.emissions
+            # print "EMISSIONS"
+            # print self.emissions
             
             # TODO: how to determine convergence
             # print np.linalg.norm(old_A-self.transitions)
@@ -225,7 +218,24 @@ class HMM(object):
         self.gamma = np.zeros((self.state_len, self.observation_len))
         for i in range(0,iterations):
             # TODO: Do the Expectation Maximization step
-            self.baum_welch()        
+            self.baum_welch()
+
+    def test(self, test_observations):
+        self.observations = test_observations
+        self.observation_len = len(self.observations)
+        self.final_observation_index = self.observation_len-1
+        
+        self.alpha = None
+        self.beta = None
+        self.zeta = None
+        self.gamma = None
+        self.gamma_sum = np.zeros(self.state_len)
+
+        prob_O_lambda = self.forward()
+        print "PROBABILITY"
+        print prob_O_lambda 
+
+
 
 
 
@@ -235,18 +245,23 @@ class Recognizer(object):
         rospy.init_node('recognizer')
         self.codebook = None
 
-        # TODO: AudioData msg?
-        # self.sub = rospy.Subscriber(audio_topic, AudioData, self.process_audio)
+        states = [0, 1, 2, 3, 4, 5, 6]
+        transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
+        emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
+        self.voice_obs = None 
+        self.hmm = HMM(transitions=transitions, emissions=emissions, states=states)
 
+        # TODO: save a person's HMM after training
 
-    def process_audio(self, isTraining):
+    def process_audio(self, isTraining, sound_file):
         """ Takes in a wav file and outputs labeled observations of the audio
             isTraining: bool that is true if the model is being trained
         """
         # (rate, sig) = msg
         # TODO: how to translate microphone audio to correct format?
 
-        (rate, sig) = wav.read("english.wav")
+        (rate, sig) = wav.read(sound_file)
+        sig = sig.astype(np.float64)
         # MFCC Features. Each row corresponds to MFCC for a frame
         mfcc_feat = mfcc(sig, rate)
 
@@ -257,9 +272,9 @@ class Recognizer(object):
             # Create a codebook and labeled observations
             self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
         else:
-            labeled_obs = vq(mfcc_feat, self.codebook)
+            labeled_obs = vq(mfcc_feat, self.codebook)[0]
 
-        return labeled_obs
+        self.voice_obs = labeled_obs
 
     def run(self):
         """ Main run function """
@@ -268,7 +283,6 @@ class Recognizer(object):
         
         while not rospy.is_shutdown():  
             try:
-                # self.process_audio(isTraining=True)
                 print "Running"
                 r.sleep()
             except rospy.exceptions.ROSTimeMovedBackwardsException:
@@ -277,6 +291,38 @@ class Recognizer(object):
 
 if __name__ == '__main__':
     recognizer = Recognizer("/audio/audio")
-    recognizer.run()
-    hmm = HMM()
-    hmm.forward()
+
+    print "SHRUTI training"
+    recognizer.process_audio(True, "shruti.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "COLVIN training"
+    recognizer.process_audio(True, "colvin.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "KATIE training"
+    recognizer.process_audio(True, "katie.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "BONNIE training"
+    recognizer.process_audio(True, "bonnie.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+
+
