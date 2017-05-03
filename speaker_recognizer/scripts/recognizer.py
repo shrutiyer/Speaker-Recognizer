@@ -8,6 +8,7 @@ from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
 import glob
 import ntpath
+import os
 
 """
 HMM Questions:
@@ -83,8 +84,8 @@ class HMM(object):
         for state in range(1, self.final_state_index):
             self.alpha[self.final_state_index][self.final_observation_index] += self.alpha[state][self.final_observation_index]* \
                                                                     self.transitions[state][self.final_state_index]
-        print "ALPHA"
-        print self.alpha
+        # print "ALPHA"
+        # print self.alpha
         return self.alpha[self.final_state_index][self.final_observation_index]
 
     def backward(self):
@@ -229,7 +230,7 @@ class HMM(object):
             # TODO: Do the Expectation Maximization step
             self.baum_welch()
             # print self.emissions
-        np.savez("../models/" + self.name, transitions=self.transitions, emissions=self.emissions)
+        np.savez("../models/" + self.name, transitions=self.transitions, emissions=self.emissions) 
 
     def test(self, test_observations):
         self.observations = test_observations
@@ -266,7 +267,7 @@ class Recognizer(object):
         # creating codebook with all models
 
         mfcc_feats = None
-        print "HALP"
+    
         for filename in glob.iglob('../data/voices/*.wav'):
             print filename
             (rate, sig) = wav.read(filename)
@@ -284,7 +285,6 @@ class Recognizer(object):
             new_person.mfcc_feat = mfcc_person
 
             self.people.append(new_person)
-        print "PLS HALP"
 
         # Normalize the features
         whitened = whiten(mfcc_feats)
@@ -328,9 +328,9 @@ if __name__ == '__main__':
     print "TRAINING"
     recognizer.run(True) # training
     
-    # print "TESTING"
-    # recognizer.run(False, "../data/voices/katie.wav") # testing
-
+    print "TESTING"
+    recognizer.run(False, "../data/voices/katie_crop.wav") # testing
+    # recognizer.run(False, "katie_crop.wav")
     # print "SHRUTI training"
     # recognizer.process_audio(True)
     # recognizer.hmm.train(recognizer.voice_obs[100:300])
