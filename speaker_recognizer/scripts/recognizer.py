@@ -59,11 +59,14 @@ class HMM(object):
         # j: state
         # t: time
 
-        print "USING EM"
-        print self.emissions
+        # print "USING EM"
+        # print self.emissions
         
-        # Initialize alpha = Previous forward path probability. Size # of states by length of observation
-        self.alpha = np.zeros((self.state_len, self.observation_len))
+        # # Initialize alpha = Previous forward path probability. Size # of states by length of observation
+        # self.alpha = np.zeros((self.state_len, self.observation_len))
+
+        # print "ALPHA"
+        # print self.alpha
 
         # Initialization
         for state in range(1, self.final_state_index):
@@ -80,16 +83,13 @@ class HMM(object):
         for state in range(1, self.final_state_index):
             self.alpha[self.final_state_index][self.final_observation_index] += self.alpha[state][self.final_observation_index]* \
                                                                     self.transitions[state][self.final_state_index]
-        # print "ALPHA"
-        # print self.alpha
+        print "ALPHA"
+        print self.alpha
         return self.alpha[self.final_state_index][self.final_observation_index]
 
     def backward(self):
         """ Given an HMM, lambda, determine the probability, beta, of seeing the 
             observations from time t+1 to the end, given that we are in state i at time t."""
-
-        # Initialize beta
-        self.beta = np.zeros((self.state_len, self.observation_len))
 
         # Initialization
         for state in range(1, self.final_state_index):
@@ -165,8 +165,8 @@ class HMM(object):
 
         if (gamma_sum_den != 0):
             self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
-        print "UPDATING EM"
-        print self.emissions
+        # print "UPDATING EM"
+        # print self.emissions
 
     def baum_welch(self):
         """ Given an observation sequence O and the set of states in the HMM, 
@@ -176,8 +176,7 @@ class HMM(object):
         # TODO: Replace this with a while loop
 
         for i in range(0,1):
-            old_A = self.transitions
-            old_B = self.emissions
+
             # expectation step
             self.forward()
             self.backward()
@@ -221,6 +220,9 @@ class HMM(object):
         self.observation_len = len(self.observations)
         self.final_observation_index = self.observation_len-1
 
+        self.alpha = np.zeros((self.state_len, self.observation_len))
+        self.beta = np.zeros((self.state_len, self.observation_len))
+
         self.zeta = np.zeros((self.state_len, self.state_len, self.observation_len))
         self.gamma = np.zeros((self.state_len, self.observation_len))
         for i in range(0,iterations):
@@ -240,8 +242,8 @@ class HMM(object):
     def reset(self):
         self.observation_len = len(self.observations)
         self.final_observation_index = self.observation_len-1
-        self.alpha = None
-        self.beta = None
+        self.alpha = np.zeros((self.state_len, self.observation_len))
+        self.beta = np.zeros((self.state_len, self.observation_len))
         self.zeta = None
         self.gamma = None
         self.gamma_sum = np.zeros(self.state_len)
@@ -262,9 +264,11 @@ class Recognizer(object):
 
     def get_mfcc_feat(self):
         # creating codebook with all models
-        mfcc_feats = None
 
+        mfcc_feats = None
+        print "HALP"
         for filename in glob.iglob('../data/voices/*.wav'):
+            print filename
             (rate, sig) = wav.read(filename)
 
             # MFCC Features. Each row corresponds to MFCC for a frame
@@ -280,6 +284,7 @@ class Recognizer(object):
             new_person.mfcc_feat = mfcc_person
 
             self.people.append(new_person)
+        print "PLS HALP"
 
         # Normalize the features
         whitened = whiten(mfcc_feats)
@@ -288,18 +293,18 @@ class Recognizer(object):
 
     def get_voice_obs(self):
         for hmm in self.people:
-            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:300]
+            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:200]
 
     def train_all(self):
         for person in self.people:
+            print person.name
             person.train()
-            print person.transitions
 
     def recognize_audio(self, sound_file):
         # generate observations
         (rate, sig) = wav.read(sound_file)
         mfcc_feat = mfcc(sig.astype(np.float64), rate)
-        labeled_obs = vq(mfcc_feat, self.codebook)[0][50:150]
+        labeled_obs = vq(mfcc_feat, self.codebook)[0][50:100]
         
         # return highest probability model
         # max_prob = 0.0
@@ -322,8 +327,9 @@ if __name__ == '__main__':
     recognizer = Recognizer()
     print "TRAINING"
     recognizer.run(True) # training
-    print "TESTING"
-    recognizer.run(False, "../data/voices/katie.wav") # testing
+    
+    # print "TESTING"
+    # recognizer.run(False, "../data/voices/katie.wav") # testing
 
     # print "SHRUTI training"
     # recognizer.process_audio(True)
