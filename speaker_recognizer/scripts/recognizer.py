@@ -64,10 +64,7 @@ class HMM(object):
         # print self.emissions
         
         # # Initialize alpha = Previous forward path probability. Size # of states by length of observation
-        # self.alpha = np.zeros((self.state_len, self.observation_len))
-
-        # print "ALPHA"
-        # print self.alpha
+        self.alpha = np.zeros((self.state_len, self.observation_len))
 
         # Initialization
         for state in range(1, self.final_state_index):
@@ -91,6 +88,8 @@ class HMM(object):
     def backward(self):
         """ Given an HMM, lambda, determine the probability, beta, of seeing the 
             observations from time t+1 to the end, given that we are in state i at time t."""
+
+        self.beta = np.zeros((self.state_len, self.observation_len))
 
         # Initialization
         for state in range(1, self.final_state_index):
@@ -221,9 +220,6 @@ class HMM(object):
         self.observation_len = len(self.observations)
         self.final_observation_index = self.observation_len-1
 
-        self.alpha = np.zeros((self.state_len, self.observation_len))
-        self.beta = np.zeros((self.state_len, self.observation_len))
-
         self.zeta = np.zeros((self.state_len, self.state_len, self.observation_len))
         self.gamma = np.zeros((self.state_len, self.observation_len))
         for i in range(0,iterations):
@@ -274,6 +270,7 @@ class Recognizer(object):
 
             # MFCC Features. Each row corresponds to MFCC for a frame
             mfcc_person = mfcc(sig.astype(np.float64), rate)
+            print mfcc_person
 
             if mfcc_feats is None:
                 mfcc_feats = mfcc_person 
@@ -293,7 +290,7 @@ class Recognizer(object):
 
     def get_voice_obs(self):
         for hmm in self.people:
-            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:200]
+            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:150]
 
     def train_all(self):
         for person in self.people:
@@ -304,7 +301,7 @@ class Recognizer(object):
         # generate observations
         (rate, sig) = wav.read(sound_file)
         mfcc_feat = mfcc(sig.astype(np.float64), rate)
-        labeled_obs = vq(mfcc_feat, self.codebook)[0][50:100]
+        labeled_obs = vq(mfcc_feat, self.codebook)[0][50:55]
         
         # return highest probability model
         # max_prob = 0.0
