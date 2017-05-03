@@ -169,6 +169,7 @@ class HMM(object):
         
         # iterate until convergence
         # TODO: Replace this with a while loop
+
         for i in range(0,1):
             old_A = self.transitions
             old_B = self.emissions
@@ -208,12 +209,11 @@ class HMM(object):
             # return A, B
             # return self.transitions, self.emissions
 
-    def train(self, observations, iterations=10):
+    def train(self, iterations=10):
         """
         Trains the model and calculates transitions and emissions probabilities
         Input = Array of ice-creams eaten each day
         """
-        self.observations = observations
         self.observation_len = len(self.observations)
         self.final_observation_index = self.observation_len-1
 
@@ -222,17 +222,18 @@ class HMM(object):
         for i in range(0,iterations):
             # TODO: Do the Expectation Maximization step
             self.baum_welch()
-        
+            # print self.emissions
         np.savez("../models/" + self.name, transitions=self.transitions, emissions=self.emissions)
 
     def test(self, test_observations):
+        self.observations = test_observations
         self.reset()
         prob_O_lambda = self.forward()
         print "PROBABILITY"
-        print prob_O_lambda 
+        print prob_O_lambda
+        return prob_O_lambda
 
     def reset(self):
-        self.observations = test_observations
         self.observation_len = len(self.observations)
         self.final_observation_index = self.observation_len-1
         self.alpha = None
@@ -251,21 +252,18 @@ class Recognizer(object):
         self.init_states = [0, 1, 2, 3, 4, 5, 6]
         self.init_transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
         self.init_emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
-        # self.voice_obs = None 
-        # self.hmm = HMM(transitions=transitions, emissions=emissions, states=states)
-
         self.people = []
 
         # TODO: save a person's HMM after training
 
     def get_mfcc_feat(self):
+        # creating codebook with all models
         mfcc_feats = None
 
         for filename in glob.iglob('../data/voices/*.wav'):
             (rate, sig) = wav.read(filename)
 
             # MFCC Features. Each row corresponds to MFCC for a frame
-            
             mfcc_person = mfcc(sig.astype(np.float64), rate)
 
             if mfcc_feats is None:
@@ -282,23 +280,46 @@ class Recognizer(object):
         # Normalize the features
         whitened = whiten(mfcc_feats)
         self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
+        np.savez("../models/codebook", codebook=self.codebook)
 
     def get_voice_obs(self):
         for hmm in self.people:
-            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0]
+            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:300]
 
-    def run(self):
+    def train_all(self):
+        for person in self.people:
+            person.train()
+            print person.transitions
+
+    def recognize_audio(self, sound_file):
+        # generate observations
+        (rate, sig) = wav.read(sound_file)
+        mfcc_feat = mfcc(sig.astype(np.float64), rate)
+        labeled_obs = vq(mfcc_feat, self.codebook)[0][50:150]
+        
+        # return highest probability model
+        # max_prob = 0.0
+        for hmm in self.people:
+            print hmm.name
+            hmm.test(labeled_obs)
+
+    def run(self, isTraining, sound_file=None):
         # collect data - voice samples are in ../data/voices/
 
-        self.get_mfcc_feat()
-        self.get_voice_obs()
+        if isTraining:
+            self.get_mfcc_feat()
+            self.get_voice_obs()
+            self.train_all()
+        else:
+            self.recognize_audio(sound_file)
 
 
 if __name__ == '__main__':
     recognizer = Recognizer()
-    recognizer.run()
-    # recognizer.get_mfcc_feat()
-    # recognizer.get_voice_obs()
+    print "TRAINING"
+    recognizer.run(True) # training
+    print "TESTING"
+    recognizer.run(False, "../data/voices/katie.wav") # testing
 
     # print "SHRUTI training"
     # recognizer.process_audio(True)
@@ -307,32 +328,3 @@ if __name__ == '__main__':
     # print "SHRUTI testing"
     # recognizer.process_audio(False, "shruti.wav")
     # recognizer.hmm.test(recognizer.voice_obs[50:150])
-
-    # print "COLVIN training"
-    # recognizer.process_audio(True, "../data/voices/colvin.wav")
-    # recognizer.hmm.name = "Colvin"
-    # recognizer.hmm.train(recognizer.voice_obs[100:300])
-
-    # print "SHRUTI testing"
-    # recognizer.process_audio(False, "shruti.wav")
-    # recognizer.hmm.test(recognizer.voice_obs[50:150])
-
-    # print "KATIE training"
-    # recognizer.hmm.name = "Katie"
-    # recognizer.process_audio(True, "../data/voices/katie.wav")
-    # recognizer.hmm.train(recognizer.voice_obs[100:300])
-
-    # print "SHRUTI testing"
-    # recognizer.process_audio(False, "shruti.wav")
-    # recognizer.hmm.test(recognizer.voice_obs[50:150])
-
-    # print "BONNIE training"
-    # recognizer.hmm.name = "Bonnie"
-    # recognizer.process_audio(True, "../data/voices/bonnie.wav")
-    # recognizer.hmm.train(recognizer.voice_obs[100:300])
-
-    # print "SHRUTI testing"
-    # recognizer.process_audio(False, "shruti.wav")
-    # recognizer.hmm.test(recognizer.voice_obs[50:150])
-
-
