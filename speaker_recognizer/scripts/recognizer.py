@@ -58,6 +58,9 @@ class HMM(object):
         # i: state_prime
         # j: state
         # t: time
+
+        print "USING EM"
+        print self.emissions
         
         # Initialize alpha = Previous forward path probability. Size # of states by length of observation
         self.alpha = np.zeros((self.state_len, self.observation_len))
@@ -127,7 +130,7 @@ class HMM(object):
     def calc_gamma(self, state, time):
         # Time should already be adjusted before calling the function
         self.gamma[state][time] = self.alpha[state][time] * self.beta[state][time] / self.alpha[self.final_state_index][self.final_observation_index]
-    
+
     def update_transitions(self, state, state_prime):
         # update transitions (A)
         zeta_sum_num = 0
@@ -162,6 +165,8 @@ class HMM(object):
 
         if (gamma_sum_den != 0):
             self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
+        print "UPDATING EM"
+        print self.emissions
 
     def baum_welch(self):
         """ Given an observation sequence O and the set of states in the HMM, 
@@ -175,7 +180,6 @@ class HMM(object):
             old_B = self.emissions
             # expectation step
             self.forward()
-
             self.backward()
 
             for time in range(self.get_observation_index(1), self.observation_len):
