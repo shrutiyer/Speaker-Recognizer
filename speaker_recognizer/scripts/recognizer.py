@@ -212,7 +212,7 @@ class HMM(object):
             # return A, B
             # return self.transitions, self.emissions
 
-    def train(self, iterations=10):
+    def train(self, iterations=100):
         """
         Trains the model and calculates transitions and emissions probabilities
         Input = Array of ice-creams eaten each day
@@ -253,11 +253,20 @@ class Recognizer(object):
         self.codebook = None
 
         self.init_states = [0, 1, 2, 3, 4, 5, 6]
-        self.init_transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
-        self.init_emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
-        self.people = []
 
-        # TODO: save a person's HMM after training
+        # self.init_transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
+        # self.init_emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
+
+        self.init_transitions = np.zeros((7, 7))
+        self.init_emissions = np.zeros((7, 3))
+
+        for i in range(0, len(self.init_states)):
+            self.init_transitions[i] = np.random.dirichlet(np.ones(len(self.init_states)),size=1)
+
+        for i in range(0, len(self.init_states)):
+            self.init_emissions[i] = np.random.dirichlet(np.ones(3),size=1) 
+
+        self.people = []
 
     def get_mfcc_feat(self):
         # creating codebook with all models
@@ -290,7 +299,7 @@ class Recognizer(object):
 
     def get_voice_obs(self):
         for hmm in self.people:
-            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][100:150]
+            hmm.observations = vq(hmm.mfcc_feat, self.codebook)[0][120:150]
 
     def train_all(self):
         for person in self.people:
@@ -303,11 +312,11 @@ class Recognizer(object):
         mfcc_feat = mfcc(sig.astype(np.float64), rate)
         labeled_obs = vq(mfcc_feat, self.codebook)[0][50:55]
         
-        # return highest probability model
-        # max_prob = 0.0
         for hmm in self.people:
             print hmm.name
             hmm.test(labeled_obs)
+
+        # return highest probability model
 
     def run(self, isTraining, sound_file=None):
         # collect data - voice samples are in ../data/voices/
@@ -322,16 +331,5 @@ class Recognizer(object):
 
 if __name__ == '__main__':
     recognizer = Recognizer()
-    print "TRAINING"
     recognizer.run(True) # training
-    
-    print "TESTING"
     recognizer.run(False, "../data/voices/katie_crop.wav") # testing
-    # recognizer.run(False, "katie_crop.wav")
-    # print "SHRUTI training"
-    # recognizer.process_audio(True)
-    # recognizer.hmm.train(recognizer.voice_obs[100:300])
-
-    # print "SHRUTI testing"
-    # recognizer.process_audio(False, "shruti.wav")
-    # recognizer.hmm.test(recognizer.voice_obs[50:150])
