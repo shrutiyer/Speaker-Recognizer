@@ -1,10 +1,18 @@
+---
+title: A Brief Description of Hidden Markov Models
+layout: default
+---
+[back](./)
+
+Posted on Apr 19, 2017
+
 ## Hidden Markov Models
 
 HMMs can be used to emulate a system that have finite hidden states that generate a set of events (observations), where the current state is dependent only on the previous state.
 
 A very popular (and trivial) example that could use HMM is weather prediction using ice-cream consumption. The problem is that you have access to a 10-year old Brook’s diary where she records the number of ice-creams she eats everyday. The assumption here is that there is some correlation between the weather that day (Hot or Cold) and the ice-cream consumption (one, two, etc.). We also assume that the weather on a particular day is dependent only on the weather of the day before.
 
-![Ice-cream Example](/images/HMMHotCold.jpg)
+![Ice-cream Example](images/HMMHotCold.jpg)
 
 There are three probabilities that are needed to define an HMM (along with the states) to keep in mind:
 
@@ -25,3 +33,5 @@ Given an HMM with λ and a set of observations (for ex. 3, 2, 2), calculate the 
 ### Forward-Backward
 
 Given a set of observations and a set of states in HMM, learn the best value for the probabilities that make up λ. Here, we have lots of data on Brook’s ice-cream consumption and set of weather pattern, and we are trying to predict the start, transition and emission probabilities of the HMM.
+
+[back](./)
