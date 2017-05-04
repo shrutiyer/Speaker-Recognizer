@@ -4,7 +4,7 @@ HMMs can be used to emulate a system that have finite hidden states that generat
 
 A very popular (and trivial) example that could use HMM is weather prediction using ice-cream consumption. The problem is that you have access to a 10-year old Brook’s diary where she records the number of ice-creams she eats everyday. The assumption here is that there is some correlation between the weather that day (Hot or Cold) and the ice-cream consumption (one, two, etc.). We also assume that the weather on a particular day is dependent only on the weather of the day before.
 
-![Ice-cream Example]()
+![Ice-cream Example](/images/HMM Hot Cold.jpg)
 
 There are three probabilities that are needed to define an HMM (along with the states) to keep in mind:
 
