@@ -1,5 +1,5 @@
 ---
-title: System Architecture
+title: Proposed System Architecture
 layout: default
 ---
 [back](./)
@@ -8,7 +8,7 @@ Posted on: Apr 20, 2017
 
 In this project, we are working on the robot that identifies unique speaker locations and voices. We hope to achieve the speaker recognition goal by training Hidden Markov Models for different individuals and identifying people by running the audio through these models. Our robot will have two main components in its functioning: audio localization and speaker recognition. Audio localization involves hearing audio through two microphones and locating the person by using geometry of the mics and differences in the sound received by each mic. Speaker recognition makes use of Hidden Markov Models to extract and analyze features of each person.
 
-## System Architecture
+## (Proposed) System Architecture
 
 ![System Architecture](images/SystemDiagram.jpg)
 
