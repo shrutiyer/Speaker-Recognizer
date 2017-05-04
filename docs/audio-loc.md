@@ -28,7 +28,7 @@ We hadn’t tried to be vertically inline with the microphones the first time we
 
 We took the resulting time shifts (ITD) and multiplied them by the sampling interval (1/Fs) and the speed of sound (C) to get the difference in distance the sound had to travel between the two microphones. We predict the angle of a speaker using the following equation
 
-![Approximation](images/AnglesEsti.png)
+![Approximation](images/AngleEsti.png)
 
 ```
 d1^2 - d2^2 = 2*D*r*sin(theta)
