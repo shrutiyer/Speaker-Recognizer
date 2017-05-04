@@ -2,6 +2,9 @@
 title: A Brief Description of Hidden Markov Models
 layout: default
 ---
+[back](./)
+
+Posted on Apr 19, 2017
 
 ## Hidden Markov Models
 
@@ -30,3 +33,5 @@ Given an HMM with λ and a set of observations (for ex. 3, 2, 2), calculate the 
 ### Forward-Backward
 
 Given a set of observations and a set of states in HMM, learn the best value for the probabilities that make up λ. Here, we have lots of data on Brook’s ice-cream consumption and set of weather pattern, and we are trying to predict the start, transition and emission probabilities of the HMM.
+
+[back](./)
