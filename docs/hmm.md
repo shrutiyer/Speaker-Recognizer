@@ -1,3 +1,8 @@
+---
+title: A Brief Description of Hidden Markov Models
+layout: default
+---
+
 ## Hidden Markov Models
 
 HMMs can be used to emulate a system that have finite hidden states that generate a set of events (observations), where the current state is dependent only on the previous state.
