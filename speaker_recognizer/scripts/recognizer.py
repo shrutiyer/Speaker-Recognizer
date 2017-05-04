@@ -18,35 +18,30 @@ HMM Questions:
 
 class HMM(object):
 
-    def __init__(self, name=None, transitions=None, emissions=None, observations=None):
+    def __init__(self, name=None, transitions=None, emissions=None, states=None):
 
-        self.name = None
+        self.name = name
         self.transitions = transitions # Matrix of transision probabilities from one state to another. Size # of states by # of states
         self.emissions = emissions # Matrix of emission probabilities. Size # of states by # of observation symbol
-        self.states = None # Includes start (q0) and end (qF) states. Along with N hidden states
-        self.observations = observations
-
-        self.observation_len = len(self.observations)
+        
+        self.states = states # Includes start (q0) and end (qF) states. Along with N hidden states
         self.state_len = len(self.states)
+        self.final_state_index = self.state_len-1
 
-        self.final_state_index = state_len-1
-        self.final_observation_index = observation_len-1
+        # Gets set while training
+        self.observations = None
+        self.observation_len = 0
+        self.final_observation_index = 0
 
         self.alpha = None
         self.beta = None
         self.zeta = None
         self.gamma = None
 
-    def transition_prob(self, i_state, j_state):
-        # TODO: Include start probabilities in here
-        if not(i_state in self.states and j_state in self.states):
-            return None
-        return self.transitions[i_state][j_state]
+        self.gamma_sum = np.zeros(self.state_len)
 
-    def emission_prob(self, state, observation): # TODO: observation arg?
-        if not(state in self.states and observation in self.observations):
-            return None
-        return self.emissions[state][observation]
+    def emission_prob(self, state, time):
+        return self.emissions[state][self.observations[time]-1]
 
     def get_observation_index(self, index):
         """Helper function to do indexing starting 1 instead"""
@@ -66,64 +61,22 @@ class HMM(object):
 
         # Initialization
         for state in range(1, self.final_state_index):
-            self.alpha[state][1] = self.transition_prob(0,state)*self.emissions[state][self.get_observation_index(1)]
+            self.alpha[state][self.get_observation_index(1)] = self.transitions[0][state]*self.emission_prob(state, self.get_observation_index(1))
 
         # Recursion
-        for time in range(1, self.observation_len): # Start from the second observation
+        for time in range(self.get_observation_index(2), self.observation_len): # Start from the second observation
             for state in range(1, self.final_state_index): # Exclude start and end states here
                 for state_prime in range(1, self.final_state_index):
                     self.alpha[state][time] += self.alpha[state_prime][time-1]*self.transitions[state_prime][state]* \
-                                    self.emissions[state][self.get_observation_index(time)] 
+                                    self.emission_prob(state, time) 
 
         # Termination
         for state in range(1, self.final_state_index):
             self.alpha[self.final_state_index][self.final_observation_index] += self.alpha[state][self.final_observation_index]* \
                                                                     self.transitions[state][self.final_state_index]
-
-        # return self.alpha[self.final_state_index][self.final_observation_index]
-
-    def viterbi(self):
-        """ Given an observation sequence O and an HMM, lambda = (transitions, emissions), 
-        discover the best hidden state sequence Q """
-        path_probability = np.zeros((self.state_len, self.observation_len))
-
-        # Initialize viterbi and backpointer matrix
-        viterbi = np.zeros((self.state_len, self.observation_len))
-        backpointer = np.zeros((self.state_len,self.observation_len))
-
-        # Initialization
-        for state in range(1, final_state_index):
-            viterbi[state][1] = self.transition_prob(0,state)*self.emissions(state,self.get_observation(1))
-
-        # Recursion
-        for time in range(1, self.observation_len): # Start from the second observation
-            for state in range(1, self.final_state_index): # Exclude start and end states here
-                max_viterbi = 0
-                max_viterbi_index = (-1, -1)
-                for state_prime in range(1, self.final_state_index):
-                    current_viterbi = viterbi[state_prime][time-1]*self.transitions[state_prime][state]* \
-                                        self.emissions[state][self.get_observation_index(time)]
-                    if (current_viterbi > max_viterbi):
-                        max_viterbi = current_viterbi
-                        max_viterbi_index = (state_prime, time-1)
-
-                viterbi[state][time] = max_viterbi
-                # TODO: Tuples in a numpy array?
-                backpointer[state][time] = max_viterbi_index
-
-        # Termination
-        max_viterbi = 0
-        max_viterbi_index = (-1, -1)
-        for state in range(1, self.final_state_index):
-            current_viterbi = viterbi[state][self.final_observation_index]* \
-                                self.transitions[state][self.final_state_index]
-            if (current_viterbi > max_viterbi):
-                max_viterbi = current_viterbi
-                max_viterbi_index = (state, self.final_observation_index)
-        viterbi[self.final_state_index][final_observation_index] = max_viterbi
-        backpointer[self.final_state_index][final_observation_index] = max_viterbi_index
-
-        # TODO: Return Backtrace Path
+        # print "ALPHA"
+        # print self.alpha
+        return self.alpha[self.final_state_index][self.final_observation_index]
 
     def backward(self):
         """ Given an HMM, lambda, determine the probability, beta, of seeing the 
@@ -134,24 +87,23 @@ class HMM(object):
 
         # Initialization
         for state in range(1, self.final_state_index):
-            self.beta[state][self.final_observation_index] = self.transition_prob(state, self.final_state_index)
-
+            self.beta[state][self.final_observation_index] = self.transitions[state][self.final_state_index]
+        
         # Recursion
 
         # i: state
         # j: state_prime
         # t: time
-        for time in range(1, self.observation_len): # Start from the second observation
+        for time in range(self.final_observation_index-1, self.get_observation_index(1)-1, -1):
             for state in range(1, self.final_state_index): # Exclude start and end states here
                 for state_prime in range(1, self.final_state_index):
                     self.beta[state][time] += self.transitions[state][state_prime] *  \
-                        self.emissions[state_prime][self.get_observation_index(time+1)] * \
+                        self.emission_prob(state_prime, time+1) * \
                         self.beta[state_prime][time+1]
 
         # Termination
         for state in range(1, self.final_state_index):
-            update = self.transitions[0][state] * self.emissions[state][self.get_observation_index(1)] * self.beta[state][1]
-            self.alpha[self.final_state_index][self.final_observation_index] += update
+            update = self.transitions[0][state] * self.emission_prob(state, self.get_observation_index(1)) * self.beta[state][self.get_observation_index(1)]
             self.beta[0][self.get_observation_index(1)] += update
 
         # # TODO: what does the backward algorithm return?
@@ -162,25 +114,37 @@ class HMM(object):
     # i: state
     # j: state_prime
     def calc_squiggle(self, state, state_prime, time): 
-        self.zeta = (self.alpha[state][time] * self.transitions[state][state_prime] * \
-            self.emissions[state_prime][self.get_observation_index(time+1)] * \
-            self.beta[state_prime][time+1]) / self.alpha[self.final_state_index][self.final_observation_index]
+        # Time should already be adjusted before calling the function
+        self.zeta[state][state_prime][time] = (self.alpha[state][time] * self.transitions[state][state_prime] * \
+            self.emission_prob(state_prime,time+1) * self.beta[state_prime][time+1]) / \
+            self.alpha[self.final_state_index][self.final_observation_index] 
 
     # gamma: the probability of being in state j at time t
     # for updating self.emissions (B)
     def calc_gamma(self, state, time):
-        self.gamma = self.alpha[state][time] * self.beta[state][time] / self.alpha[self.final_state_index][self.final_observation_index]
-
+        # Time should already be adjusted before calling the function
+        self.gamma[state][time] = self.alpha[state][time] * self.beta[state][time] / self.alpha[self.final_state_index][self.final_observation_index]
+    
     def update_transitions(self, state, state_prime):
         # update transitions (A)
         zeta_sum_num = 0
         zeta_sum_den = 0
-        for time in range(1, self.final_observation_index-1):
-            zeta_sum_num += self.zeta[state][state_prime]
-            for state_k in range(1, self.final_state_index):
-                zeta_sum_den += self.zeta[state][state_k]
+        
+        if state == 0:
+            # Start state
+            self.transitions[state][state_prime] = self.gamma[state_prime][0]
+        elif state_prime == self.final_state_index:
+            # End state
+            if (self.gamma_sum[state] != 0):
+                self.transitions[state][state_prime] = self.gamma[state][self.final_observation_index] / self.gamma_sum[state]
+        else:
+            # For all other times
+            for time in range(self.get_observation_index(1), self.observation_len):
+                zeta_sum_num += self.zeta[state][state_prime][time]
+                zeta_sum_den += self.gamma[state][time]
 
-        self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
+            self.gamma_sum[state] = zeta_sum_den
+            self.transitions[state][state_prime] = zeta_sum_num / zeta_sum_den
 
     def update_emissions(self, state, v_k):
          # update emissions (B)
@@ -188,50 +152,90 @@ class HMM(object):
         gamma_sum_den = 0
 
         # sum over all t for which the observation at time t was v_k
-        for time in range(1, self.final_observation_index):
-        if self.observations[time] == v_k:
-            gamma_sum_num += self.gamma[state, time]
-        gamma_sum_den += self.gamma[state, time]
+        for time in range(self.get_observation_index(1), self.observation_len):
+            if self.observations[time] == v_k:
+                gamma_sum_num += self.gamma[state][time]
+            gamma_sum_den += self.gamma[state][time]
 
-        self.emissions[v_k][state] = gamma_sum_num / gamma_sum_den
+        if (gamma_sum_den != 0):
+            self.emissions[state][v_k-1] = gamma_sum_num / gamma_sum_den
 
     def baum_welch(self):
         """ Given an observation sequence O and the set of states in the HMM, 
             learn the transitions and emissions of the HMM."""
         
-        # TODO: how to initialize A and B
-        self.transitions = np.ones( (self.state_len, self.state_len) )
-        self.transitions = self.transitions / np.sum(self.transitions,1)
-        self.emissions = np.ones( (self.state_len, self.observation_len) )
-        self.emissions = self.emissions / np.sum(self.emissions,1)
-
         # iterate until convergence
-        while True:
+        # TODO: Replace this with a while loop
+        for i in range(0,1):
             old_A = self.transitions
             old_B = self.emissions
             # expectation step
-            for time in range(1, self.final_observation_index):
+            self.forward()
+
+            self.backward()
+
+            for time in range(self.get_observation_index(1), self.observation_len):
                 for state in range(1, self.final_state_index):
                     self.calc_gamma(state,time)
+            
+            for time in range(self.get_observation_index(1), self.final_observation_index):
+                for state in range(1, self.final_state_index):
                     for state_prime in range(1, self.final_state_index):
                         self.calc_squiggle(state,state_prime,time)
 
             # maximization step
-            for state in range(1,self.final_state_index):
-                for state_prime in range(1,self.final_state_index):
+            for state in range(0,self.state_len-1):
+                for state_prime in range(0,self.state_len):
                     self.update_transitions(state,state_prime)
 
-            for time in range(1, self.final_observation_index):
-                for state in range(1, self.final_state_index):
+                for time in range(self.get_observation_index(1), self.final_observation_index):
                     v_k = self.observations[time]
                     self.update_emissions(state,v_k)
             
+            # print "TRANSITIONS"
+            # print self.transitions
+
+            # print "EMISSIONS"
+            # print self.emissions
+            
             # TODO: how to determine convergence
-            print np.linalg.norm(old_A-self.transitions)
-            print np.linalg.norm(old_B-self.emissions)
+            # print np.linalg.norm(old_A-self.transitions)
+            # print np.linalg.norm(old_B-self.emissions)
                 
             # return A, B
             # return self.transitions, self.emissions
+
+    def train(self, observations, iterations=10):
+        """
+        Trains the model and calculates transitions and emissions probabilities
+        Input = Array of ice-creams eaten each day
+        """
+        self.observations = observations
+        self.observation_len = len(self.observations)
+        self.final_observation_index = self.observation_len-1
+
+        self.zeta = np.zeros((self.state_len, self.state_len, self.observation_len))
+        self.gamma = np.zeros((self.state_len, self.observation_len))
+        for i in range(0,iterations):
+            # TODO: Do the Expectation Maximization step
+            self.baum_welch()
+
+    def test(self, test_observations):
+        self.observations = test_observations
+        self.observation_len = len(self.observations)
+        self.final_observation_index = self.observation_len-1
+        
+        self.alpha = None
+        self.beta = None
+        self.zeta = None
+        self.gamma = None
+        self.gamma_sum = np.zeros(self.state_len)
+
+        prob_O_lambda = self.forward()
+        print "PROBABILITY"
+        print prob_O_lambda 
+
+
 
 
 
@@ -241,18 +245,23 @@ class Recognizer(object):
         rospy.init_node('recognizer')
         self.codebook = None
 
-        # TODO: AudioData msg?
-        # self.sub = rospy.Subscriber(audio_topic, AudioData, self.process_audio)
+        states = [0, 1, 2, 3, 4, 5, 6]
+        transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
+        emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
+        self.voice_obs = None 
+        self.hmm = HMM(transitions=transitions, emissions=emissions, states=states)
 
+        # TODO: save a person's HMM after training
 
-    def process_audio(self, isTraining):
+    def process_audio(self, isTraining, sound_file):
         """ Takes in a wav file and outputs labeled observations of the audio
             isTraining: bool that is true if the model is being trained
         """
         # (rate, sig) = msg
         # TODO: how to translate microphone audio to correct format?
 
-        (rate, sig) = wav.read("english.wav")
+        (rate, sig) = wav.read(sound_file)
+        sig = sig.astype(np.float64)
         # MFCC Features. Each row corresponds to MFCC for a frame
         mfcc_feat = mfcc(sig, rate)
 
@@ -263,9 +272,9 @@ class Recognizer(object):
             # Create a codebook and labeled observations
             self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
         else:
-            labeled_obs = vq(mfcc_feat, self.codebook)
+            labeled_obs = vq(mfcc_feat, self.codebook)[0]
 
-        return labeled_obs
+        self.voice_obs = labeled_obs
 
     def run(self):
         """ Main run function """
@@ -274,7 +283,6 @@ class Recognizer(object):
         
         while not rospy.is_shutdown():  
             try:
-                # self.process_audio(isTraining=True)
                 print "Running"
                 r.sleep()
             except rospy.exceptions.ROSTimeMovedBackwardsException:
@@ -283,6 +291,38 @@ class Recognizer(object):
 
 if __name__ == '__main__':
     recognizer = Recognizer("/audio/audio")
-    recognizer.run()
-    hmm = HMM()
-    hmm.forward()
+
+    print "SHRUTI training"
+    recognizer.process_audio(True, "shruti.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "COLVIN training"
+    recognizer.process_audio(True, "colvin.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "KATIE training"
+    recognizer.process_audio(True, "katie.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+    print "BONNIE training"
+    recognizer.process_audio(True, "bonnie.wav")
+    recognizer.hmm.train(recognizer.voice_obs[100:300])
+
+    print "SHRUTI testing"
+    recognizer.process_audio(False, "shruti.wav")
+    recognizer.hmm.test(recognizer.voice_obs[50:150])
+
+
+
