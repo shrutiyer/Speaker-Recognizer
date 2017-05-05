@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from python_speech_features import mfcc, delta, logfbank
-import scipy.io.wavfile as wav
-from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
 
 """
