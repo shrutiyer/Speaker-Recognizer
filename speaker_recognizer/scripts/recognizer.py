@@ -284,35 +284,35 @@ if __name__ == '__main__':
     recognizer = Recognizer("/audio/audio")
 
     print "SHRUTI training"
-    recognizer.process_audio(True, "shruti.wav")
+    recognizer.process_audio(True, "../data/voices/shruti.wav")
     recognizer.hmm.train(recognizer.voice_obs[100:300])
 
     print "SHRUTI testing"
-    recognizer.process_audio(False, "shruti.wav")
+    recognizer.process_audio(False, "../data/voices/shruti.wav")
     recognizer.hmm.test(recognizer.voice_obs[50:150])
 
     print "COLVIN training"
-    recognizer.process_audio(True, "colvin.wav")
+    recognizer.process_audio(True, "../data/voices/colvin.wav")
     recognizer.hmm.train(recognizer.voice_obs[100:300])
 
     print "SHRUTI testing"
-    recognizer.process_audio(False, "shruti.wav")
+    recognizer.process_audio(False, "../data/voices/shruti.wav")
     recognizer.hmm.test(recognizer.voice_obs[50:150])
 
     print "KATIE training"
-    recognizer.process_audio(True, "katie.wav")
+    recognizer.process_audio(True, "../data/voices/katie.wav")
     recognizer.hmm.train(recognizer.voice_obs[100:300])
 
     print "SHRUTI testing"
-    recognizer.process_audio(False, "shruti.wav")
+    recognizer.process_audio(False, "../data/voices/shruti.wav")
     recognizer.hmm.test(recognizer.voice_obs[50:150])
 
     print "BONNIE training"
-    recognizer.process_audio(True, "bonnie.wav")
+    recognizer.process_audio(True, "../data/voices/bonnie.wav")
     recognizer.hmm.train(recognizer.voice_obs[100:300])
 
     print "SHRUTI testing"
-    recognizer.process_audio(False, "shruti.wav")
+    recognizer.process_audio(False, "../data/voices/shruti.wav")
     recognizer.hmm.test(recognizer.voice_obs[50:150])
 
 
