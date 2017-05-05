@@ -299,8 +299,8 @@ if __name__ == '__main__':
     shruti = HMM(transitions=transitions, emissions=emissions, states=states)
     shruti.train(recognizer.voice_obs[100:300])
     
-    print "SHRUTI testing on SHRUTI"
-    recognizer.process_audio(False, "../data/voices/shruti.wav")
+    print "BONNIE testing on SHRUTI"
+    recognizer.process_audio(False, "../data/voices/bonnie.wav")
     shruti.test(recognizer.voice_obs[50:150])
 
     print "COLVIN training"
@@ -308,8 +308,8 @@ if __name__ == '__main__':
     colvin = HMM(transitions=transitions, emissions=emissions, states=states)
     colvin.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing on COLVIN"
-    recognizer.process_audio(False, "../data/voices/shruti.wav")
+    print "BONNIE testing on COLVIN"
+    recognizer.process_audio(False, "../data/voices/bonnie.wav")
     colvin.test(recognizer.voice_obs[50:150])
 
     print "KATIE training"
@@ -317,8 +317,8 @@ if __name__ == '__main__':
     katie = HMM(transitions=transitions, emissions=emissions, states=states)
     katie.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing on KATIE"
-    recognizer.process_audio(False, "../data/voices/shruti.wav")
+    print "BONNIE testing on KATIE"
+    recognizer.process_audio(False, "../data/voices/bonnie.wav")
     katie.test(recognizer.voice_obs[50:150])
 
     print "BONNIE training"
@@ -326,9 +326,7 @@ if __name__ == '__main__':
     bonnie = HMM(transitions=transitions, emissions=emissions, states=states)
     bonnie.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing on BONNIE"
-    recognizer.process_audio(False, "../data/voices/shruti.wav")
+    print "BONNIE testing on BONNIE"
+    recognizer.process_audio(False, "../data/voices/bonnie.wav")
     bonnie.test(recognizer.voice_obs[50:150])
-
-
 
