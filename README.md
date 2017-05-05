@@ -5,7 +5,7 @@ To run the code, simply
 
 `roscore`
 
-`rosrun speaker_recognizer recognizer.py
+`rosrun speaker_recognizer recognizer.py`
 
 ## Dependencies
 
