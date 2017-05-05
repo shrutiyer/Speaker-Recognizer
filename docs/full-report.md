@@ -1,3 +1,11 @@
+---
+title: A Comprehensive Report
+layout: default
+---
+[back](./)
+
+Posted on May 4, 2017
+
 For this project, we explored audio localization and speaker recognition with the goal of building a robot that identifies unique speaker locations and voices.  For the purpose of audio localization, we learned how to calculate the angle of a speaker in relation to the robot, using the geometry of our two microphones and the time differences between the sound received by each of them.  For the purpose of speaker recognition, we studied Mel-frequency cepstral coefficients, vector quantization with K-means, and hidden Markov models to extract and analyze features of each person’s voice.
 
 ### System Architecture
@@ -72,3 +80,5 @@ In the future, we will actually implement a shell script user interface to switc
 We originally implemented the MFCC calculation such that a codebook of voice features was generated for each model that we trained.  What makes more sense is to implement a common code book that represents voice features from all of our trained speakers.  This allows for features from each of our speakers to have unique labels.  Otherwise, in the case of individual codebooks, these labels overlap, which does not allow us to distinguish between the first feature of one speaker and the first feature of the next.
 
 We would also add a user interface that lets them to control the training of each individual in the room as well as start recognizing and localizing. We have individual parts (audio localization and hidden markov models and recognizer) but we want to combine all the parts into one big program.
+
+[back](./)
