@@ -6,6 +6,7 @@ from python_speech_features import mfcc, delta, logfbank
 import scipy.io.wavfile as wav
 from scipy.cluster.vq import kmeans2, whiten, vq
 import numpy as np
+import glob
 
 class HMM(object):
 
@@ -227,45 +228,49 @@ class HMM(object):
         print prob_O_lambda 
 
 
-
-
-
 class Recognizer(object):
 
     def __init__(self, audio_topic):
         rospy.init_node('recognizer')
         self.codebook = None
 
-        states = [0, 1, 2, 3, 4, 5, 6]
-        transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
-        emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
         self.voice_obs = None 
-        self.hmm = HMM(transitions=transitions, emissions=emissions, states=states)
 
-        # TODO: save a person's HMM after training
+        # TODO: save a person's HMM after training in the recognizer
 
     def process_audio(self, isTraining, sound_file):
         """ Takes in a wav file and outputs labeled observations of the audio
             isTraining: bool that is true if the model is being trained
         """
-        # (rate, sig) = msg
-        # TODO: how to translate microphone audio to correct format?
-
         (rate, sig) = wav.read(sound_file)
         sig = sig.astype(np.float64)
         # MFCC Features. Each row corresponds to MFCC for a frame
         mfcc_feat = mfcc(sig, rate)
 
-        # Normalize the features
-        whitened = whiten(mfcc_feat)
-
-        if (isTraining):
-            # Create a codebook and labeled observations
-            self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
-        else:
-            labeled_obs = vq(mfcc_feat, self.codebook)[0]
+        labeled_obs = vq(mfcc_feat, self.codebook)[0]
 
         self.voice_obs = labeled_obs
+
+    def get_mfcc_feat(self):
+        # creating codebook with all models
+
+        mfcc_feats = None
+    
+        for filename in glob.iglob('../data/voices/*.wav'):
+            print filename
+            (rate, sig) = wav.read(filename)
+
+            # MFCC Features. Each row corresponds to MFCC for a frame
+            mfcc_person = mfcc(sig.astype(np.float64), rate)
+
+            if mfcc_feats is None:
+                mfcc_feats = mfcc_person 
+            else:
+                mfcc_feats = np.concatenate((mfcc_feats, mfcc_person), axis=0)
+
+        # Normalize the features
+        whitened = whiten(mfcc_feats)
+        self.codebook, labeled_obs = kmeans2(data=whitened, k=3)
 
     def run(self):
         """ Main run function """
@@ -281,39 +286,49 @@ class Recognizer(object):
 
 
 if __name__ == '__main__':
+    states = [0, 1, 2, 3, 4, 5, 6]
+    transitions = np.array([[0.0,0.2,0.2,0.2,0.2,0.2,0.0],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.16,0.16,0.16,0.16,0.16,0.16],[0.0,0.0,0.0,0.0,0.0,0.0,0.0]])
+    emissions = np.array([[0.0,0.0,0.0],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.33,0.33,0.33],[0.0,0.0,0.0]])
     recognizer = Recognizer("/audio/audio")
+
+    # Create a common
+    recognizer.get_mfcc_feat()
 
     print "SHRUTI training"
     recognizer.process_audio(True, "../data/voices/shruti.wav")
-    recognizer.hmm.train(recognizer.voice_obs[100:300])
-
-    print "SHRUTI testing"
+    shruti = HMM(transitions=transitions, emissions=emissions, states=states)
+    shruti.train(recognizer.voice_obs[100:300])
+    
+    print "SHRUTI testing on SHRUTI"
     recognizer.process_audio(False, "../data/voices/shruti.wav")
-    recognizer.hmm.test(recognizer.voice_obs[50:150])
+    shruti.test(recognizer.voice_obs[50:150])
 
     print "COLVIN training"
     recognizer.process_audio(True, "../data/voices/colvin.wav")
-    recognizer.hmm.train(recognizer.voice_obs[100:300])
+    colvin = HMM(transitions=transitions, emissions=emissions, states=states)
+    colvin.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing"
+    print "SHRUTI testing on COLVIN"
     recognizer.process_audio(False, "../data/voices/shruti.wav")
-    recognizer.hmm.test(recognizer.voice_obs[50:150])
+    colvin.test(recognizer.voice_obs[50:150])
 
     print "KATIE training"
     recognizer.process_audio(True, "../data/voices/katie.wav")
-    recognizer.hmm.train(recognizer.voice_obs[100:300])
+    katie = HMM(transitions=transitions, emissions=emissions, states=states)
+    katie.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing"
+    print "SHRUTI testing on KATIE"
     recognizer.process_audio(False, "../data/voices/shruti.wav")
-    recognizer.hmm.test(recognizer.voice_obs[50:150])
+    katie.test(recognizer.voice_obs[50:150])
 
     print "BONNIE training"
     recognizer.process_audio(True, "../data/voices/bonnie.wav")
-    recognizer.hmm.train(recognizer.voice_obs[100:300])
+    bonnie = HMM(transitions=transitions, emissions=emissions, states=states)
+    bonnie.train(recognizer.voice_obs[100:300])
 
-    print "SHRUTI testing"
+    print "SHRUTI testing on BONNIE"
     recognizer.process_audio(False, "../data/voices/shruti.wav")
-    recognizer.hmm.test(recognizer.voice_obs[50:150])
+    bonnie.test(recognizer.voice_obs[50:150])
 
 
 
