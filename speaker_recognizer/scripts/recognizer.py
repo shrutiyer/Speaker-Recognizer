@@ -10,15 +10,6 @@ import glob
 import ntpath
 import os
 
-"""
-HMM Questions:
-- How are the hidden states created?
-- Do the forward and backward algorithms have to return anything?
-- How to represent a backtrace path?
-- How to initialize A and B?
-- How to determine convergence in Baum-Welch?
-"""
-
 class HMM(object):
 
     def __init__(self, name=None, transitions=None, emissions=None, states=None):
